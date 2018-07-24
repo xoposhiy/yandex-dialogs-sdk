@@ -21,8 +21,8 @@ import {
 
 import aliceStateMiddleware from './middlewares/aliceStateMiddleware'
 
-import { IConfig, IAlice } from './types/alice'
-import { ICommand } from './types/command'
+import { IConfig } from './types/alice'
+import { ICommand, CommandNameType, CallbackType } from './types/command'
 import { IContext } from './types/context'
 import { WebhookResponse, WebhookRequest } from './types/webhook'
 import { EventInterface, EventEmitterInterface } from './types/eventEmitter'
@@ -39,7 +39,7 @@ import {
 const DEFAULT_SESSIONS_LIMIT: number = 1000
 const DEFAULT_RESPONSE_TIMEOUT = 1200
 
-export default class Alice implements IAlice {
+export default class Alice {
   public scenes: Scene[]
 
   protected anyCallback: (ctx: IContext) => void
@@ -91,12 +91,12 @@ export default class Alice implements IAlice {
     this.middlewares.push(middleware)
   }
 
-  /*
+  /**
    * Set up the command
-   * @param {string | Array<string> | regex} name — Trigger for the command
-   * @param {Function} callback — Handler for the command
+   * @param name — Trigger for the command
+   * @param callback — Handler for the command
    */
-  public command(name: ICommand, callback: (IContext) => void) {
+  public command(name: CommandNameType, callback: CallbackType) {
     this.commands.add(name, callback)
   }
 

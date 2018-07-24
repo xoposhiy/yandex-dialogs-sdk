@@ -9,8 +9,3 @@ export interface IConfig {
   devServerUrl?: string
   responseTimeout?: number
 }
-
-export interface IAlice {
-  command(name: ICommand, callback: (IContext) => void): void
-  use(middleware: (IContext: IContext) => IContext): void
-}

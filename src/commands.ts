@@ -10,7 +10,7 @@ import {
   TYPE_MATCHER,
 } from './constants'
 import { ICommands } from './types/commands'
-import { ICommand } from './types/command'
+import { ICommand, CommandNameType, CallbackType } from './types/command'
 import { IContext } from './types/context'
 
 export default class Commands implements ICommands {
@@ -68,7 +68,7 @@ export default class Commands implements ICommands {
     return this.commands.length
   }
 
-  public add(name, callback) {
+  public add(name: CommandNameType, callback: CallbackType) {
     this.commands.push(new Command(name, callback))
   }
 
