@@ -3,7 +3,9 @@ import {
   ALICE_PROTOCOL_VERSION,
 } from './constants'
 
-export interface IReply {
+import { WebhookResponse } from './types/webhook'
+
+export interface WebhookResponse {
   response: {
     text?: string,
     tts?: string,
@@ -14,7 +16,8 @@ export interface IReply {
   session?: {},
 }
 export default class ReplyBuilder {
-  public reply: IReply
+  public reply: WebhookResponse
+
   constructor(request) {
     this.reply = {
       response: {
@@ -53,6 +56,15 @@ export default class ReplyBuilder {
     return this
   }
 
+  public card(card) {
+    if (!card) {
+      throw new Error('Card block can not be empty!')
+    }
+    
+    this.reply.response.card = card
+    return this
+  }
+
   public shouldEndSession(flag) {
     this.reply.response.end_session = flag
     return this
@@ -62,5 +74,3 @@ export default class ReplyBuilder {
     return this.reply
   }
 }
-
-module.exports = ReplyBuilder

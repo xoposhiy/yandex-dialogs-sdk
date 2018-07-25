@@ -3,21 +3,19 @@ import { reversedInterpolation, selectCommand } from './utils'
 import Session from './session'
 import Scene from './scene'
 
-import ReplyBuilder, { IReply } from './replyBuilder'
+import ReplyBuilder from './replyBuilder'
 import ButtonBuilder from './buttonBuilder'
 
 import { WebhookResponse, WebhookRequest } from './types/webhook'
 import { EventEmitterInterface } from './types/eventEmitter'
-import { IContext } from './types/context'
-import { ICommand } from './types/command'
+import Command, { CommandReply } from './command'
 import { BigImageCard } from './types/card'
-import { image, bigImageCard, itemsListCard } from './card'
-import reply from './reply'
+import { image, bigImageCard } from './card'
 import eventEmitter from './eventEmitter'
 
 import { EVENT_MESSAGE_SENT } from './constants'
 
-export default class Context implements IContext {
+export default class Context {
   public req: WebhookRequest
   public sessionId: string
   public messageId: string
@@ -28,9 +26,8 @@ export default class Context implements IContext {
   public originalUtterance: string
   public eventEmitter: EventEmitterInterface
 
-  public command?: ICommand
+  public command?: Command
 
-  public replyBuilder: ReplyBuilder
   public buttonBuilder: ButtonBuilder
 
   public sendResponse: (response: WebhookResponse) => void
@@ -62,7 +59,6 @@ export default class Context implements IContext {
     this.session = session
 
     this.eventEmitter = eventEmitter
-    this.replyBuilder = new ReplyBuilder(this.req)
     this.buttonBuilder = new ButtonBuilder()
 
     this._isReplied = false
@@ -81,37 +77,24 @@ export default class Context implements IContext {
     return null
   }
 
-  public reply(replyMessage: string | IReply): WebhookResponse {
+  public reply(replyMessage: CommandReply): WebhookResponse {
     if (typeof replyMessage === 'undefined') {
       throw new Error('Reply message could not be empty!')
     }
 
-    const message = this._createReply(replyMessage)
+    const message = this.mapReplyToWebhookResponse(replyMessage)
     return this._sendReply(message)
   }
 
   public async replyWithImage(params: string | BigImageCard) {
-    if (typeof params === 'string') {
-      const message = this._createReply(
-        reply({
-          text: 'ᅠ ', // empty symbol
-          card: compose(bigImageCard, image)(params)
-        })
-      )
-      return this._sendReply(message)
-    }
-    const message = this._createReply(
-      reply({
-        text: 'ᅠ ',
-        card: bigImageCard(params),
-      })
-    )
+    const card = typeof params === 'string' ? compose(
+      bigImageCard,
+      image
+    )(params) : bigImageCard(params)
+
+    const message = this.mapReplyToWebhookResponse({ text: 'ᅠ ', card  })
     return this._sendReply(message)
   }
-
-  // public async replyWithGallery() {
-  // @TODO
-  // }
 
   public enterScene(scene: Scene): void {
     if (!scene) throw new Error('Please provide scene you want to enter in')
@@ -123,33 +106,37 @@ export default class Context implements IContext {
     this.session.setData('currentScene', null)
   }
 
-  public goodbye(replyMessage: string | IReply): void {
+  public goodbye(replyMessage: CommandReply): void {
     if (typeof replyMessage === 'undefined') {
       throw new Error('Message should be string or result of ReplyBuilder.get')
     }
 
-    const message = this._createReply(replyMessage)
+    const message = this.mapReplyToWebhookResponse(replyMessage)
     message.response.end_session = true;
 
     this._sendReply(message)
   }
 
-  private _createReply(replyMessage): WebhookResponse {
-    /*
-    * Если @replyMessage — string,
-    * то заворачиваем в стандартную форму.
-    */
-    if (typeof replyMessage === 'string') {
-      replyMessage = this.replyBuilder
-        .text(replyMessage)
-        .tts(replyMessage)
-        .get()
+  private mapReplyToWebhookResponse(reply: CommandReply): WebhookResponse {
+    const builder = new ReplyBuilder(this.req);
+
+    if (typeof reply === 'string') {
+      builder
+        .text(reply)
+        .tts(reply)
+    } else {
+      builder
+        .text(reply.text)
+        .tts(reply.tts)
+        .card(reply.card)
+        .shouldEndSession(reply.endSession)
+
+      if (reply.buttons) {
+        reply.buttons.forEach(button => builder.addButton(button))
+      }
     }
-    // Is no session, lets use context session
-    if (!replyMessage.session) {
-      replyMessage.session = this.session
-    }
-    return replyMessage
+
+    return builder.get()
   }
 
   private _sendReply(replyMessage: WebhookResponse): any {

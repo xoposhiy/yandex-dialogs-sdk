@@ -22,8 +22,7 @@ import {
 import aliceStateMiddleware from './middlewares/aliceStateMiddleware'
 
 import { IConfig } from './types/alice'
-import { ICommand, CommandNameType, CallbackType } from './types/command'
-import { IContext } from './types/context'
+import Command, { CommandName, CommandCallback } from './command'
 import { WebhookResponse, WebhookRequest } from './types/webhook'
 import { EventInterface, EventEmitterInterface } from './types/eventEmitter'
 import eventEmitter from './eventEmitter'
@@ -42,9 +41,9 @@ const DEFAULT_RESPONSE_TIMEOUT = 1200
 export default class Alice {
   public scenes: Scene[]
 
-  protected anyCallback: (ctx: IContext) => void
-  private welcomeCallback: (ctx: IContext) => void
-  private timeoutCallback: (ctx: IContext) => void
+  protected anyCallback: (ctx: Context) => void
+  private welcomeCallback: (ctx: Context) => void
+  private timeoutCallback: (ctx: Context) => void
   protected commands: Commands
   private middlewares: any[]
   private currentScene: Scene | null
@@ -84,7 +83,7 @@ export default class Alice {
    * @param {Function} middleware - function, that receives {context}
    * and makes some modifications with it.
    */
-  public use(middleware: (IContext: IContext) => IContext): void {
+  public use(middleware: (IContext: Context) => Context): void {
     if (!isFunction(middleware)) {
       throw new Error('Any middleware could only be a function.')
     }
@@ -96,7 +95,7 @@ export default class Alice {
    * @param name — Trigger for the command
    * @param callback — Handler for the command
    */
-  public command(name: CommandNameType, callback: CallbackType) {
+  public command(name: CommandName, callback: CommandCallback) {
     this.commands.add(name, callback)
   }
 
@@ -224,7 +223,7 @@ export default class Alice {
      * Запускаем её обработчик.
      */
     if (requestedCommands.length !== 0) {
-      const requestedCommand: ICommand = requestedCommands[0]
+      const requestedCommand: Command = requestedCommands[0]
       context.command = requestedCommand
       return await requestedCommand.callback(context)
     }

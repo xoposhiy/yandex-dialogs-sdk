@@ -1,4 +1,3 @@
-import Command from './command'
 import utils from './utils'
 import Fuse from 'fuse.js'
 
@@ -10,11 +9,11 @@ import {
   TYPE_MATCHER,
 } from './constants'
 import { ICommands } from './types/commands'
-import { ICommand, CommandNameType, CallbackType } from './types/command'
-import { IContext } from './types/context'
+import Command, { CommandName, CommandCallback } from './command'
+import Context from './context'
 
 export default class Commands implements ICommands {
-  public commands: ICommand[]
+  public commands: Command[]
   public fuseOptions: {}
   constructor(config = null) {
     this.commands = []
@@ -46,7 +45,7 @@ export default class Commands implements ICommands {
     return this.commands.filter((command) => command.type === TYPE_REGEXP)
   }
 
-  public async search(ctx: IContext): Promise<ICommand[]> {
+  public async search(ctx: Context): Promise<Command[]> {
     const matchedStrings = this._searchStrings(ctx.message)
     const matchedRegexps = this._searchRegexps(ctx.message)
     const matchedFigures = this._searchFigures(ctx.message)
@@ -68,7 +67,7 @@ export default class Commands implements ICommands {
     return this.commands.length
   }
 
-  public add(name: CommandNameType, callback: CallbackType) {
+  public add(name: CommandName, callback: CommandCallback) {
     this.commands.push(new Command(name, callback))
   }
 
@@ -76,10 +75,10 @@ export default class Commands implements ICommands {
     this.commands = []
   }
 
-  private async _searchMatchers(ctx: IContext) {
+  private async _searchMatchers(ctx: Context) {
     const matchers = this._matchers
     for (const matcher of matchers) {
-      const matchPredicate = matcher.name as (ctx: IContext) => boolean;
+      const matchPredicate = matcher.name as (ctx: Context) => boolean;
 
       if (await matchPredicate(ctx)) {
         return [matcher]

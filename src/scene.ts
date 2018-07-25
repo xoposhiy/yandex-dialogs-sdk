@@ -1,10 +1,9 @@
 import Alice from './alice'
 import Commands from './commands'
-import Command from './command'
 
 import { IConfig } from './types/alice'
 import { WebhookRequest, WebhookResponse } from './types/webhook'
-import { IContext } from './types/context'
+import Context from './context'
 
 export default class Scene extends Alice {
   public name: string
@@ -12,7 +11,7 @@ export default class Scene extends Alice {
   public leaveCommand: Commands
   protected commands: Commands
   protected config: IConfig
-  protected anyCallback: (ctx: IContext) => void
+  protected anyCallback: (ctx: Context) => void
   
   constructor(name, config: IConfig = {}) {
     super()
@@ -74,7 +73,7 @@ export default class Scene extends Alice {
   public async handleSceneRequest(
     req: WebhookRequest,
     sendResponse: (res: WebhookResponse) => void,
-    ctx: IContext,
+    ctx: Context,
     type: string = null,
   ): Promise<any> {
 

@@ -27,7 +27,7 @@ export interface WebhookRequest {
 
 export interface WebhookResponse {
   response: {
-      text: string
+      text?: string
       tts?: string
       buttons?: IButton[]
       end_session?: boolean
