@@ -1,8 +1,8 @@
 import Alice from './alice'
 import Commands from './commands'
+import { CommandCallback, CommandName, CommandReply } from './command'
 
 import { IConfig } from './types/alice'
-import { WebhookRequest, WebhookResponse } from './types/webhook'
 import Context from './context'
 
 export default class Scene extends Alice {
@@ -11,8 +11,8 @@ export default class Scene extends Alice {
   public leaveCommand: Commands
   protected commands: Commands
   protected config: IConfig
-  protected anyCallback: (ctx: Context) => void
-  
+  protected anyCallback: CommandCallback
+
   constructor(name, config: IConfig = {}) {
     super()
     this.name = name
@@ -35,8 +35,10 @@ export default class Scene extends Alice {
   /*
    * Trigger to activate the scene
    */
-  public enter(name, callback) {
-    if (!name) { throw new Error('Enter command name is not specified') }
+  public enter(name: CommandName, callback: CommandCallback) {
+    if (!name) {
+      throw new Error('Enter command name is not specified')
+    }
     this.enterCommand = new Commands(this.config.fuseOptions || null)
     this.enterCommand.add(name, callback)
   }
@@ -44,61 +46,64 @@ export default class Scene extends Alice {
   /*
    * Trigger to leave the scene
    */
-  public leave(name, callback) {
-    if (!name) { throw new Error('Leave command name is not specified') }
+  public leave(name: CommandName, callback: CommandCallback) {
+    if (!name) {
+      throw new Error('Leave command name is not specified')
+    }
+
     this.leaveCommand = new Commands(this.config.fuseOptions || null)
     this.leaveCommand.add(name, callback)
   }
 
-  public command(name, callback) {
+  public command(name: CommandName, callback: CommandCallback) {
     this.commands.add(name, callback)
   }
 
-  public any(callback) {
+  public any(callback: CommandCallback) {
     this.anyCallback = callback
   }
 
   public async isEnterCommand(ctx) {
-    if (!this.enterCommand) { return false }
+    if (!this.enterCommand) {
+      return false
+    }
     const matched = await this.enterCommand.search(ctx)
     return matched.length !== 0
   }
 
   public async isLeaveCommand(ctx) {
-    if (!this.leaveCommand) { return false }
+    if (!this.leaveCommand) {
+      return false
+    }
     const matched = await this.leaveCommand.search(ctx)
     return matched.length !== 0
   }
 
-  public async handleSceneRequest(
-    req: WebhookRequest,
-    sendResponse: (res: WebhookResponse) => void,
-    ctx: Context,
-    type: string = null,
-  ): Promise<any> {
+  public async handleSceneRequest(ctx: Context, type: string = null): Promise<void> {
+    const [requestedCommand] = await this._getCommandsByType(ctx, type)
+    let reply: void | CommandReply = null
 
-    ctx.sendResponse = sendResponse
+    if (requestedCommand) {
+      reply = await requestedCommand.callback(ctx)
+    } else if (this.anyCallback) {
+      reply = await this.anyCallback(ctx)
+    }
 
-    let requestedCommands = []
+    if (reply) {
+      ctx.reply(reply)
+    }
+  }
 
+  private async _getCommandsByType(ctx: Context, type: string) {
     if (type === 'enter') {
-      requestedCommands = [this.enterCommand.get()[0]]
-    } else if (type === 'leave') {
-      requestedCommands = [this.leaveCommand.get()[0]]
-    } else {
-      requestedCommands = await this.commands.search(ctx)
+      return [this.enterCommand.get()[0]]
     }
 
-    if (requestedCommands.length !== 0) {
-      const requestedCommand = requestedCommands[0]
-      return await requestedCommand.callback(ctx)
+    if (type === 'leave') {
+      return [this.leaveCommand.get()[0]]
     }
 
-    if (this.anyCallback) {
-      return await this.anyCallback(ctx)
-    }
-
-    return Promise.resolve()
+    return await this.commands.search(ctx)
   }
 }
 

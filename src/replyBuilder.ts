@@ -4,6 +4,7 @@ import {
 } from './constants'
 
 import { WebhookResponse } from './types/webhook'
+import { BigImageCard, ItemsListCard } from './types/card'
 
 export interface WebhookResponse {
   response: {
@@ -56,7 +57,7 @@ export default class ReplyBuilder {
     return this
   }
 
-  public card(card) {
+  public card(card: BigImageCard | ItemsListCard) {
     if (!card) {
       throw new Error('Card block can not be empty!')
     }

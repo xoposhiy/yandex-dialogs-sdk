@@ -41,8 +41,8 @@ const DEFAULT_RESPONSE_TIMEOUT = 1200
 export default class Alice {
   public scenes: Scene[]
 
-  protected anyCallback: (ctx: Context) => void
-  private welcomeCallback: (ctx: Context) => void
+  protected anyCallback: CommandCallback
+  private welcomeCallback: CommandCallback
   private timeoutCallback: (ctx: Context) => void
   protected commands: Commands
   private middlewares: any[]
@@ -102,7 +102,7 @@ export default class Alice {
   /*
   * Стартовая команда на начало сессии
   */
-  public welcome(callback: (IContext) => void): void {
+  public welcome(callback: CommandCallback): void {
     this.welcomeCallback = callback
   }
 
@@ -121,7 +121,7 @@ export default class Alice {
    * @param {Object} req — JSON request from the client
    * @param {Function} sendResponse — Express res function while listening on port.
    */
-  public async handleRequestBody(req, sendResponse): Promise<any> {
+  public async handleRequestBody(req: WebhookRequest, sendResponse): Promise<void> {
     /* clear old sessions */
     if (this.sessions.length > (this.config.sessionsLimit || DEFAULT_SESSIONS_LIMIT)) {
       this.sessions.flush()
@@ -171,23 +171,19 @@ export default class Alice {
        */
       if (matchedScene) {
         if (await matchedScene.isLeaveCommand(context)) {
-          const sceneResponse = await matchedScene.handleSceneRequest(req, sendResponse, context, 'leave')
+          await matchedScene.handleSceneRequest(context, 'leave')
           session.setData('currentScene', null)
-          return sceneResponse
+          return
         } else {
-          const sceneResponse = await matchedScene.handleSceneRequest(
-            req, sendResponse, context,
-          )
-          if (sceneResponse) {
-            return sceneResponse
-          }
+          await matchedScene.handleSceneRequest(context)
+          return
         }
       }
     } else {
       /*
        * Looking for scene's activational phrases
        */
-      let matchedScene = null
+      let matchedScene: Scene = null
       for (const scene of this.scenes) {
         const result = await scene.isEnterCommand(context)
         if (result) {
@@ -197,16 +193,11 @@ export default class Alice {
 
       if (matchedScene) {
         session.setData('currentScene', matchedScene.name)
-        const sceneResponse = await matchedScene.handleSceneRequest(
-          req, sendResponse, context, 'enter',
-        )
-        if (sceneResponse) {
-          return sceneResponse
-        }
+        await matchedScene.handleSceneRequest( context, 'enter')
+        return
       }
     }
 
-    const requestedCommands = await this.commands.search(context)
     /*
     * Если новая сессия, то запускаем стартовую команду
     */
@@ -215,17 +206,31 @@ export default class Alice {
        * Patch context with middlewares
        */
       if (this.welcomeCallback) {
-        return await this.welcomeCallback(context)
+        const welcomeReply = await this.welcomeCallback(context)
+
+        if (welcomeReply) {
+          context.reply(welcomeReply);
+        }
+
+        return;
       }
     }
+
+    const [requestedCommand] = await this.commands.search(context)
+
     /*
      * Команда нашлась в списке.
      * Запускаем её обработчик.
      */
-    if (requestedCommands.length !== 0) {
-      const requestedCommand: Command = requestedCommands[0]
+    if (requestedCommand) {
       context.command = requestedCommand
-      return await requestedCommand.callback(context)
+      const commandReply = await requestedCommand.callback(context)
+      
+      if (commandReply) {
+        context.reply(commandReply)
+      }
+
+      return;
     }
 
     /*
@@ -238,7 +243,13 @@ export default class Alice {
         'to catch anything that not matches with commands',
       ].join('\n'))
     }
-    return await this.anyCallback(context)
+
+
+    const anyReply = await this.anyCallback(context)
+
+    if (anyReply) {
+      context.reply(anyReply)
+    }
   }
 
   /*

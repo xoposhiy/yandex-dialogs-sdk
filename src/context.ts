@@ -70,20 +70,21 @@ export default class Context {
 
   get body() {
     const requestText = selectCommand(this.req)
-    if (typeof this.command.name === 'string') {
+
+    if (this.command && typeof this.command.name === 'string') {
       return reversedInterpolation(this.command.name, requestText)
     }
 
     return null
   }
 
-  public reply(replyMessage: CommandReply): WebhookResponse {
+  public reply(replyMessage: CommandReply): void {
     if (typeof replyMessage === 'undefined') {
       throw new Error('Reply message could not be empty!')
     }
 
-    const message = this.mapReplyToWebhookResponse(replyMessage)
-    return this._sendReply(message)
+    const message = this._mapReplyToWebhookResponse(replyMessage)
+    this._sendReply(message)
   }
 
   public async replyWithImage(params: string | BigImageCard) {
@@ -92,14 +93,15 @@ export default class Context {
       image
     )(params) : bigImageCard(params)
 
-    const message = this.mapReplyToWebhookResponse({ text: 'ᅠ ', card  })
+    const message = this._mapReplyToWebhookResponse({ text: 'ᅠ ', card  })
     return this._sendReply(message)
   }
 
   public enterScene(scene: Scene): void {
     if (!scene) throw new Error('Please provide scene you want to enter in')
-    const matchedScene = this.scenes.find(candidateScene => candidateScene.name === scene.name)
-    this.session.setData('currentScene', matchedScene.name)
+    if (this.scenes.includes(scene) === false) throw new Error('Сцена не зарегистрирована. Сначала вызовите alice.registerScene( scene ).')
+
+    this.session.setData('currentScene', scene.name)
   }
 
   public leaveScene(): void {
@@ -111,13 +113,13 @@ export default class Context {
       throw new Error('Message should be string or result of ReplyBuilder.get')
     }
 
-    const message = this.mapReplyToWebhookResponse(replyMessage)
+    const message = this._mapReplyToWebhookResponse(replyMessage)
     message.response.end_session = true;
 
     this._sendReply(message)
   }
 
-  private mapReplyToWebhookResponse(reply: CommandReply): WebhookResponse {
+  private _mapReplyToWebhookResponse(reply: CommandReply): WebhookResponse {
     const builder = new ReplyBuilder(this.req);
 
     if (typeof reply === 'string') {
@@ -125,23 +127,35 @@ export default class Context {
         .text(reply)
         .tts(reply)
     } else {
-      builder
-        .text(reply.text)
-        .tts(reply.tts)
-        .card(reply.card)
-        .shouldEndSession(reply.endSession)
+      if (reply.text) {
+        builder.text(reply.text)
+      }
+
+      if (reply.tts) {
+        builder.tts(reply.tts)
+      }
+
+      if (reply.card) {
+        builder.card(reply.card)
+      }
 
       if (reply.buttons) {
         reply.buttons.forEach(button => builder.addButton(button))
       }
+
+      builder.shouldEndSession(reply.endSession)
     }
 
     return builder.get()
   }
 
   private _sendReply(replyMessage: WebhookResponse): any {
-    if (this._isReplied) return
+    if (this._isReplied) {
+      throw new Error('Повторная отправка ответа невозможна. Команда должна либо возвращать ответ либо вызывать Context.reply.')
+    }
+
     this._isReplied = true
+    
     /*
      * That fires when listening on port.
      */

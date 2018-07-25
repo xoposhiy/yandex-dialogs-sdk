@@ -77,11 +77,3 @@ test('handling command resolve with callback', async (done) => {
     done()
   })
 })
-
-test('handling command resolve with promise', async () => {
-  const alice = new Alice()
-  const MOCK_MSG = 'Hello world'
-  alice.any(ctx => ctx.reply(MOCK_MSG))
-  const response = await alice.handleRequest(generateRequest('hi!'))
-  expect(response.response.text).toBe(MOCK_MSG)
-})

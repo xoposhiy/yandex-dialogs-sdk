@@ -1,3 +1,5 @@
+import { WebhookRequest } from '../types/webhook'
+
 const formatToken = (token) => token
   .replace('$', '')
   .replace('{', '')
@@ -42,10 +44,10 @@ export function reversedInterpolation(template: string, searchString: string) {
   return connectTokensWithFigures(tokens, figures)
 }
 
-export const selectCommand = (req): string => req.request.command
-export const selectSession = (req) => req.session
-export const selectSessionId = (req) => selectSession(req).session_id
-export const selectUserId = (req) => selectSession(req).user_id
+export const selectCommand = (req: WebhookRequest): string => req.request.command
+export const selectSession = (req: WebhookRequest) => req.session
+export const selectSessionId = (req: WebhookRequest) => selectSession(req).session_id
+export const selectUserId = (req: WebhookRequest) => selectSession(req).user_id
 export const isFunction = (fn: (args: any) => any) => fn && typeof fn === 'function'
 export const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
 export const rejectsIn = (ms: number) => new Promise((resolve, reject) => setTimeout(reject, ms))
