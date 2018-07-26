@@ -49,7 +49,7 @@ test('register scene and enter in', async done => {
   done()
 })
 
-test.only('changing scene', async done => {
+test('changing scene', async done => {
   const alice = new Alice()
   const scene1 = new Scene('scene1')
   const scene2 = new Scene('scene2')
