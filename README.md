@@ -110,10 +110,10 @@ alice.command('купить слона', async (ctx) => {
 
 ## Alice 
 
-- `alice.command` - Установить обработчик команды
-- `alice.welcome` - Приветственный метод. Вызывается в начале пользовательской сессии.
-- `alice.uploadImage` - Загрузить картинку.
-- `alice.getImages` - Получить список загруженных изображений.
+- `alice.command` — установить обработчик команды
+- `alice.welcome` — установить приветственную фразу. Вызывается в начале пользовательской сессии.
+- `alice.uploadImage` — загрузить картинку.
+- `alice.getImages` — получить список загруженных изображений.
 
 ## Ctx
 
@@ -121,20 +121,20 @@ alice.command('купить слона', async (ctx) => {
 
 #### Свойства
 
-- `[ctx.message]` — Команда от пользователя.
-- `[ctx.originalUtterance]` - shortcut for `ctx.req.request.original_utterance`
-- `[ctx.body]` — Объект с данными после интент-обработки ([подробнее](https://github.com/fletcherist/yandex-dialogs-sdk/tree/master/examples/ctxBody.js))
+- `[ctx.message]` — команда от пользователя.
+- `[ctx.originalUtterance]` — shortcut для `ctx.req.request.original_utterance`
+- `[ctx.body]` — объект с данными после интент-обработки ([подробнее](https://github.com/fletcherist/yandex-dialogs-sdk/tree/master/examples/ctxBody.js)).
 - `[ctx.sessionId]` — ID сессии.
 - `[ctx.messageId` — ID сообщения.
 - `[ctx.userId` — ID пользователя.
-- `[ctx.payload]` — Произвольный JSON, который присылается обработчику, если какая-то кнопка будет нажата.
+- `[ctx.payload]` — произвольный JSON, который присылается обработчику, если какая-то кнопка будет нажата.
 
 
 #### Методы
 
-- `ctx.reply` - Ответить на пользовательский запрос.
-- `ctx.replyWithImage` — Ответить картинкой.
-- `ctx.goodbye` - Ответь и завершить сессию (выйти из навыка).
+- `ctx.reply` — ответить на пользовательский запрос.
+- `ctx.replyWithImage` — ответить картинкой.
+- `ctx.goodbye` — ответить и завершить сессию (выйти из навыка).
 - `ctx.replyBuilder` — фабрика для создания ответа на запрос. О ней — дальше.
 - `ctx.buttonBuilder` — фабрика для создания кнопок. О ней — дальше.
 
